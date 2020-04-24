@@ -32,7 +32,7 @@ const RagequitForm = () => {
   }, [currentWallet]);
 
   if (!canRage) {
-    return <h2>Cannot Rage while yes votes on open proposals</h2>;
+    return <h2>Cannot Rage if you have any yes votes on open proposals</h2>;
   }
 
   return (
