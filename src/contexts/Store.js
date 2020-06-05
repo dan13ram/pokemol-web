@@ -102,6 +102,7 @@ const Store = ({ children, daoParam }) => {
                 web3Connect,
               );
               const [account] = await web3.eth.getAccounts();
+              w3c.store = {web3, provider};
 
               setWeb3Connect(w3c);
               user = createWeb3User(account);
