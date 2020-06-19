@@ -1,5 +1,8 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import ReactPlayer from 'react-player';
+import Box from '3box';
+
+import { withApollo } from 'react-apollo';
 import styled from 'styled-components';
 
 import {
@@ -8,13 +11,22 @@ import {
   descriptionMaker,
   linkMaker,
 } from '../../utils/ProposalHelper';
-import { CurrentUserContext, DaoDataContext } from '../../contexts/Store';
+
+import {
+  CurrentUserContext,
+  DaoServiceContext,
+  DaoDataContext,
+  Web3ConnectContext,
+} from '../../contexts/Store';
+import { GET_METADATA } from '../../utils/Queries';
+import { get } from '../../utils/Requests';
 import Web3Service from '../../utils/Web3Service';
 import VoteControl from './VoteControl';
 import ValueDisplay from '../shared/ValueDisplay';
 import { withRouter } from 'react-router-dom';
 import ProposalActions from './ProposalActions';
 import ProposalV2Guts from './ProposalV2Guts';
+import ProposalComments from './ProposalComments';
 
 import { basePadding } from '../../variables.styles';
 import { DataP, LabelH5, DataH2 } from '../../App.styles';
@@ -57,14 +69,90 @@ const VideoDiv = styled.div`
   }
 `;
 
-const ProposalDetail = ({ proposal, processProposal, submitVote, canVote }) => {
+const ProposalDetail = ({
+  proposal,
+  processProposal,
+  submitVote,
+  canVote,
+  client,
+}) => {
+  const [detailData, setDetailData] = useState();
+  const [commentOpts, setCommentOpts] = useState();
   const [currentUser] = useContext(CurrentUserContext);
+  const [web3Connect] = useContext(Web3ConnectContext);
+  const [daoService] = useContext(DaoServiceContext);
   const [daoData] = useContext(DaoDataContext);
 
-  const countDown = getProposalCountdownText(
-    proposal,
-    proposal.moloch.periodDuration,
-  );
+  const { periodDuration } =
+    +daoData.version === 2
+      ? { periodDuration: proposal.moloch.periodDuration }
+      : client.cache.readQuery({
+          query: GET_METADATA,
+        });
+
+  const id =
+    +daoData.version === 2 ? proposal.proposalId : proposal.proposalIndex;
+  const tribute =
+    +daoData.version === 2 ? proposal.tributeOffered : proposal.tokenTribute;
+
+  useEffect(() => {
+    const set3BoxData = async () => {
+      try {
+        const box = await Box.openBox(
+          currentUser.username,
+          web3Connect.store.provider,
+          {},
+        );
+        const profile = await Box.getProfile(currentUser.username);
+        const opts = {
+          adminEthAddr: '0xBaf6e57A3940898fd21076b139D4aB231dCbBc5f',
+          handleLogin: () => {
+            console.log('test');
+          },
+          spaceName: 'PokeMol',
+          ethereum: web3Connect.store.provider,
+          currentUser3BoxProfile: profile,
+          myAddress: currentUser.username,
+          box,
+        };
+
+        box.onSyncDone(() => {
+          opts.box = box;
+          setCommentOpts(opts);
+        });
+        setCommentOpts(opts);
+      } catch (err) {
+        console.log('3box err', err);
+      }
+    };
+    if (currentUser) {
+      // used to init space
+      set3BoxData();
+    }
+  }, [currentUser, web3Connect]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const metaData = await get(
+          `moloch/proposal/${daoService.daoAddress.toLowerCase()}-${id}`,
+        );
+
+        setDetailData(metaData.data);
+      } catch (err) {
+        console.log(err);
+
+        setDetailData({
+          description: descriptionMaker(proposal),
+          link: linkMaker(proposal),
+        });
+      }
+    };
+    fetchData();
+    // eslint-disable-next-line
+  }, []);
+
+  const countDown = getProposalCountdownText(proposal, periodDuration);
   const title = titleMaker(proposal);
   const description = descriptionMaker(proposal);
   const link = linkMaker(proposal);
@@ -141,6 +229,32 @@ const ProposalDetail = ({ proposal, processProposal, submitVote, canVote }) => {
           </div>
         </>
       )}
+
+      <div>
+        {commentOpts &&
+        commentOpts.currentUser3BoxProfile &&
+        commentOpts.box ? (
+          <div>
+            <ProposalComments
+              spaceName={commentOpts.spaceName}
+              handleLogin={commentOpts.handleLogin}
+              box={commentOpts.box}
+              myAddress={currentUser.username || ''}
+              currentUser3BoxProfile={commentOpts.currentUser3BoxProfile}
+              ethereum={commentOpts.ethereum}
+              proposal={proposal}
+            ></ProposalComments>
+          </div>
+        ) : (
+          <div>
+            <span role="img" aria-label>
+              💬
+            </span>{' '}
+            <a href={`/dao/${daoData.contractAddress}/sign-in`}>sign in</a> to
+            read and view comments
+          </div>
+        )}
+      </div>
 
       {proposal.status === 'ReadyForProcessing' && currentUser && (
         <button onClick={() => processProposal(proposal)}>Process</button>
