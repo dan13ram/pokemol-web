@@ -2,7 +2,6 @@ import React, { useContext, useState, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 import Box from '3box';
 
-import { withApollo } from 'react-apollo';
 import styled from 'styled-components';
 
 import {
@@ -17,6 +16,7 @@ import {
   DaoServiceContext,
   DaoDataContext,
   Web3ConnectContext,
+  BoostContext,
 } from '../../contexts/Store';
 import { GET_METADATA } from '../../utils/Queries';
 import { get } from '../../utils/Requests';
@@ -26,7 +26,7 @@ import ValueDisplay from '../shared/ValueDisplay';
 import { withRouter } from 'react-router-dom';
 import ProposalActions from './ProposalActions';
 import ProposalV2Guts from './ProposalV2Guts';
-import ProposalComments from './ProposalComments';
+import { ProposalComments, ProposalCommentsReadOnly } from './ProposalComments';
 
 import { basePadding } from '../../variables.styles';
 import { DataP, LabelH5, DataH2 } from '../../App.styles';
@@ -82,6 +82,7 @@ const ProposalDetail = ({
   const [web3Connect] = useContext(Web3ConnectContext);
   const [daoService] = useContext(DaoServiceContext);
   const [daoData] = useContext(DaoDataContext);
+  const [boosts] = useContext(BoostContext);
 
   const { periodDuration } =
     +daoData.version === 2
@@ -97,6 +98,8 @@ const ProposalDetail = ({
 
   useEffect(() => {
     const set3BoxData = async () => {
+      console.log('3box do it');
+
       try {
         const box = await Box.openBox(
           currentUser.username,
@@ -105,21 +108,11 @@ const ProposalDetail = ({
         );
         const profile = await Box.getProfile(currentUser.username);
         const opts = {
-          adminEthAddr: '0xBaf6e57A3940898fd21076b139D4aB231dCbBc5f',
-          handleLogin: () => {
-            console.log('test');
-          },
-          spaceName: 'PokeMol',
-          ethereum: web3Connect.store.provider,
           currentUser3BoxProfile: profile,
           myAddress: currentUser.username,
           box,
         };
 
-        box.onSyncDone(() => {
-          opts.box = box;
-          setCommentOpts(opts);
-        });
         setCommentOpts(opts);
       } catch (err) {
         console.log('3box err', err);
@@ -230,31 +223,23 @@ const ProposalDetail = ({
         </>
       )}
 
-      <div>
-        {commentOpts &&
-        commentOpts.currentUser3BoxProfile &&
-        commentOpts.box ? (
-          <div>
-            <ProposalComments
-              spaceName={commentOpts.spaceName}
-              handleLogin={commentOpts.handleLogin}
-              box={commentOpts.box}
-              myAddress={currentUser.username || ''}
-              currentUser3BoxProfile={commentOpts.currentUser3BoxProfile}
-              ethereum={commentOpts.ethereum}
+      {boosts.proposalComments && (
+        <div>
+          {commentOpts ? (
+            <div>
+              <p>Comments!!!!</p>
+              <ProposalComments
+                options={commentOpts}
+                proposal={proposal}
+              ></ProposalComments>
+            </div>
+          ) : (
+            <ProposalCommentsReadOnly
               proposal={proposal}
-            ></ProposalComments>
-          </div>
-        ) : (
-          <div>
-            <span role="img" aria-label>
-              💬
-            </span>{' '}
-            <a href={`/dao/${daoData.contractAddress}/sign-in`}>sign in</a> to
-            read and view comments
-          </div>
-        )}
-      </div>
+            ></ProposalCommentsReadOnly>
+          )}
+        </div>
+      )}
 
       {proposal.status === 'ReadyForProcessing' && currentUser && (
         <button onClick={() => processProposal(proposal)}>Process</button>
