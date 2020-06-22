@@ -1,12 +1,16 @@
 import React, { useContext } from 'react';
+import { useHistory } from 'react-router-dom';
+
 import ThreeBoxComments from '3box-comments-react';
 import styled from 'styled-components';
 
 import { DaoDataContext, DaoServiceContext } from '../../contexts/Store';
 
 const Comments3boxReadOnly = styled.div`
-  .input {
-    display: none !important;
+  button,
+  div,
+  input {
+    pointer-events: none;
   }
 `;
 
@@ -14,8 +18,13 @@ export const ProposalCommentsReadOnly = ({ proposal }) => {
   const [daoData] = useContext(DaoDataContext);
   const [daoService] = useContext(DaoServiceContext);
 
+  const history = useHistory();
+  const navigateToSignIn = () => {
+    history.push(`/dao/${daoService.daoAddress.toLowerCase()}/sign-in`);
+  };
+
   return (
-    <Comments3boxReadOnly>
+    <Comments3boxReadOnly onClick={navigateToSignIn}>
       <ThreeBoxComments
         // required
         spaceName={'PokeMol'}

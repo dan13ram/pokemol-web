@@ -23,7 +23,6 @@ import { get } from '../../utils/Requests';
 import Web3Service from '../../utils/Web3Service';
 import VoteControl from './VoteControl';
 import ValueDisplay from '../shared/ValueDisplay';
-import { withRouter } from 'react-router-dom';
 import ProposalActions from './ProposalActions';
 import ProposalV2Guts from './ProposalV2Guts';
 import { ProposalComments, ProposalCommentsReadOnly } from './ProposalComments';
@@ -76,7 +75,7 @@ const ProposalDetail = ({
   canVote,
   client,
 }) => {
-  const [detailData, setDetailData] = useState();
+  const [, setDetailData] = useState();
   const [commentOpts, setCommentOpts] = useState();
   const [currentUser] = useContext(CurrentUserContext);
   const [web3Connect] = useContext(Web3ConnectContext);
@@ -93,8 +92,8 @@ const ProposalDetail = ({
 
   const id =
     +daoData.version === 2 ? proposal.proposalId : proposal.proposalIndex;
-  const tribute =
-    +daoData.version === 2 ? proposal.tributeOffered : proposal.tokenTribute;
+  // const tribute =
+  //   +daoData.version === 2 ? proposal.tributeOffered : proposal.tokenTribute;
 
   useEffect(() => {
     const set3BoxData = async () => {
@@ -227,7 +226,6 @@ const ProposalDetail = ({
         <div>
           {commentOpts ? (
             <div>
-              <p>Comments!!!!</p>
               <ProposalComments
                 options={commentOpts}
                 proposal={proposal}
@@ -262,4 +260,4 @@ const ProposalDetail = ({
   );
 };
 
-export default withRouter(ProposalDetail);
+export default ProposalDetail;
