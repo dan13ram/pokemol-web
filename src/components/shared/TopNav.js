@@ -201,6 +201,16 @@ const TopNav = (props) => {
                   </Link>
                 </DropdownItemDiv>
                 <DropdownItemDiv open>
+                  <Link
+                    to={
+                      '/dao/' + daoService.daoAddress.toLowerCase() + '/metadata'
+                    }
+                    onClick={toggleElement}
+                  >
+                    Dao Profile
+                  </Link>
+                </DropdownItemDiv>
+                <DropdownItemDiv open>
                   <LinkButton
                     onClick={() => {
                       toggleElement();
